@@ -89,6 +89,21 @@ def get_metrics_for_definition(session, token, definition_id) -> List[Dict[str, 
         url = f"{BASE_URL}/api/-/pulse/definitions/{definition_id}/metrics?page_size=100&page_token={next_token}" if next_token else None
     return all_metrics
 
+_user_cache: Dict[str, str] = {}
+
+def get_user_email(session, token, site_id, user_id) -> str:
+    if not user_id:
+        return ""
+    if user_id in _user_cache:
+        return _user_cache[user_id]
+    url = f"{BASE_URL}/api/{API_VERSION}/sites/{site_id}/users/{user_id}"
+    resp = session.get(url, headers={"X-Tableau-Auth": token, **JSON_HEADERS})
+    if resp.status_code != 200:
+        return user_id
+    email = resp.json().get("user", {}).get("name", user_id)
+    _user_cache[user_id] = email
+    return email
+
 def get_subscriptions_for_metric(session, token, metric_id) -> List[Dict[str, Any]]:
     url = f"{BASE_URL}/api/-/pulse/subscriptions?metric_id={metric_id}&page_size=1000"
     headers = {"X-Tableau-Auth": token}
@@ -132,9 +147,11 @@ def main():
                 if ds_luid:
                     ds = get_datasource(session, token, site_id, ds_luid)
                     if ds and not ds.get("isCertified", False):
+                        certified_by_id = md.get("certification", {}).get("modified_by")
                         table1.append({
                             "Metric Definition Name": def_name(md),
                             "Metric Definition ID": def_id(md),
+                            "Certified By": get_user_email(session, token, site_id, certified_by_id),
                             "Datasource Name": ds.get("name"),
                             "Datasource Project Path": ds.get("project", {}).get("name"),
                             "Datasource Owner Email": ds.get("owner", {}).get("name"),
