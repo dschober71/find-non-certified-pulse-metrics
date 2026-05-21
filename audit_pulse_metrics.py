@@ -136,8 +136,8 @@ def main():
                             "Metric Definition Name": def_name(md),
                             "Metric Definition ID": def_id(md),
                             "Datasource Name": ds.get("name"),
-                            "Datasource Project Path": ds.get("projectName"),
-                            "Datasource Owner Email": ds.get("owner", {}).get("email"),
+                            "Datasource Project Path": ds.get("project", {}).get("name"),
+                            "Datasource Owner Email": ds.get("owner", {}).get("name"),
                         })
         df1 = pd.DataFrame(table1)
         print("\nTable 1: Certified metrics with non-certified datasource")
